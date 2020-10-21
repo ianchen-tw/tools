@@ -10,8 +10,8 @@ use std::time::SystemTime;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
-    name: String,
-    last_mod: SystemTime,
+    pub name: String,
+    pub last_mod: SystemTime,
 }
 
 impl CacheEntry {
@@ -28,7 +28,7 @@ impl CacheEntry {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cache {
-    entries: HashMap<String, CacheEntry>,
+    pub entries: HashMap<String, CacheEntry>,
 }
 
 impl Cache {
@@ -100,9 +100,5 @@ impl Cache {
                 .insert(key.clone(), CacheEntry::new(key.clone()));
         }
         Ok(())
-    }
-
-    pub fn exists(&self, key: &String) -> bool {
-        return self.entries.contains_key(key);
     }
 }

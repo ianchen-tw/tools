@@ -4,13 +4,13 @@ use std::process::Command;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Routine {
-    pub interval_minute: i64,
+    pub interval_minute: u32,
     pub name: String,
     pub args: Vec<String>,
 }
 
 impl Routine {
-    pub fn new(interval: i64, name: String, args: Vec<String>) -> Routine {
+    pub fn new(interval: u32, name: String, args: Vec<String>) -> Routine {
         return Routine {
             interval_minute: interval,
             name: name,

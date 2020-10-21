@@ -124,26 +124,18 @@ fn main() -> Result<(), io::Error> {
         return Ok(());
     }
     info!("Load config from file");
-    let taskctl = TaskControl::from_cfg_file();
+    let mut taskctl = TaskControl::from_cfg_file();
     debug!("{}", format!("Import routines : {:#?}", taskctl));
 
-    let mut cache: Option<Cache> = None;
     if config.force_all {
-        info!("invalide cache directory");
+        info!("invalidate cache directory");
         Cache::remove_file().unwrap();
-        Cache::ensure_cache_file();
     } else if Cache::could_load_from_file() {
         debug!("Load cache from file");
-        cache = Some(Cache::from_cache_file());
+        let cache = Cache::from_cache_file();
+        debug!("{}", format!("Cache: {:#?}", cache));
+        taskctl.replace_cache(cache);
     }
-    let cache = match cache {
-        Some(cache) => cache,
-        None => {
-            debug!("Create a new cache");
-            Cache::new()
-        }
-    };
-    debug!("{}", format!("Cache: {:#?}", cache));
 
     info!("Start to execute routines");
     taskctl.execute_all().expect("Cannot execute command");

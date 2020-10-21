@@ -6,40 +6,71 @@ use std::io::prelude::*;
 
 use crate::Cache;
 use crate::{read_config, write_config};
-use chrono::{self, Duration};
+
+use chrono;
+use chrono_humanize::HumanTime;
 use std::fs;
 use std::io;
-
+use std::time::{Duration, SystemTime};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskControl {
     routines: Vec<Routine>,
+    cache: Cache,
 }
 
 impl TaskControl {
     /// execute all routines
-    pub fn execute_all(&self) -> io::Result<()> {
+    pub fn execute_all(&mut self) -> io::Result<()> {
         debug!("run TaskControl.execute_all");
         for routine in self.routines.iter() {
-            // println!("cache exists? :{:?}", Cache::exists(&routine.name));
-            // if Cache::exists(&routine.name) {
-            //     let last_update = Cache::last_update_utc(&routine.name);
-            //     let min_delay = chrono::Duration::minutes(routine.interval_minute);
-            //     let next_run = last_update + min_delay;
-            //     if next_run <
+            let key = &routine.name;
+            let mut should_execute = true;
+            let now = SystemTime::now();
+            let mut updated_secs_before: Option<i64> = None;
+            if let Some(entry) = self.cache.entries.get_mut(key) {
+                let one_minute = Duration::new(60, 0);
+                let min_delay = one_minute * routine.interval_minute;
+                let last_update = entry.last_mod;
 
-            //     println!("last update time :{:?}", time);
-            // io::stdout().flush()?;
-            // } else {
-            //     routine.execute()?;
-            // }
-            // Cache::update(&r.name)?;
+                let earliest_time_to_update = last_update + min_delay;
+                should_execute = earliest_time_to_update < now;
+                if !should_execute {
+                    if let Ok(dura) = now.duration_since(last_update) {
+                        let secs = dura.as_secs() as i64;
+                        updated_secs_before = Some(secs);
+                    }
+                }
+            }
+            if should_execute {
+                debug!("Should update");
+                if let Ok(_) = routine.execute() {
+                    self.cache.update(key)?;
+                    debug!("Update cache and flush out..");
+                    self.cache.export()?;
+                }
+            } else {
+                if let Some(secs_before) = updated_secs_before {
+                    let dura = chrono::Local::now() - chrono::Duration::seconds(secs_before);
+                    // @TODO: show currently running command
+                    info!("{}", format!("Have update {}", HumanTime::from(dura)));
+                }
+                debug!("Cache entry exist. jump to the next");
+            }
         }
+        self.cache.export()?;
         Ok(())
+    }
+
+    pub fn replace_cache(&mut self, cache: Cache) {
+        self.cache = cache;
     }
 
     fn new() -> TaskControl {
         let routines: Vec<Routine> = Vec::new();
-        return TaskControl { routines };
+        return TaskControl {
+            routines,
+            cache: Cache::new(),
+        };
     }
     fn add_routine(&mut self, routine: Routine) {
         self.routines.push(routine);
@@ -73,7 +104,10 @@ impl TaskControl {
         let cfg = read_config().expect("Cannot read config file");
 
         let routines: Vec<Routine> = serde_yaml::from_str(&cfg).expect("Cannot parse data");
-        TaskControl { routines }
+        TaskControl {
+            routines,
+            cache: Cache::new(),
+        }
     }
 
     /// Append current routines into existing config file
