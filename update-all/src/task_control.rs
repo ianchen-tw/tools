@@ -1,17 +1,16 @@
-use serde::{Deserialize, Serialize};
-
-use crate::routine::Routine;
-use crate::CONFIG_FILE;
+use std::fs;
+use std::io;
 use std::io::prelude::*;
-
-use crate::Cache;
-use crate::{read_config, write_config};
+use std::time::{Duration, SystemTime};
 
 use chrono;
 use chrono_humanize::HumanTime;
-use std::fs;
-use std::io;
-use std::time::{Duration, SystemTime};
+use serde::{Deserialize, Serialize};
+
+use crate::routine::Routine;
+use crate::Cache;
+use crate::{config_path, read_config, write_config};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskControl {
     routines: Vec<Routine>,
@@ -23,11 +22,11 @@ impl TaskControl {
     pub fn execute_all(&mut self) -> io::Result<()> {
         debug!("run TaskControl.execute_all");
         for routine in self.routines.iter() {
-            let key = &routine.name;
+            let key = routine.get_hash();
             let mut should_execute = true;
             let now = SystemTime::now();
             let mut updated_secs_before: Option<i64> = None;
-            if let Some(entry) = self.cache.entries.get_mut(key) {
+            if let Some(entry) = self.cache.entries.get_mut(&key) {
                 let one_minute = Duration::new(60, 0);
                 let min_delay = one_minute * routine.interval_minute;
                 let last_update = entry.last_mod;
@@ -44,7 +43,7 @@ impl TaskControl {
             if should_execute {
                 debug!("Should update");
                 if let Ok(_) = routine.execute() {
-                    self.cache.update(key)?;
+                    self.cache.update(routine)?;
                     debug!("Update cache and flush out..");
                     self.cache.export()?;
                 }
@@ -77,7 +76,7 @@ impl TaskControl {
     }
 
     /// Create a default TaskControl for template
-    pub fn default_template() -> TaskControl {
+    pub fn write_default_template() -> TaskControl {
         let mut taskctl = TaskControl::new();
         taskctl.add_routine(Routine::new(
             60,
@@ -90,7 +89,7 @@ impl TaskControl {
             let mut file = fs::OpenOptions::new()
                 .write(true)
                 .create(true)
-                .open(CONFIG_FILE)
+                .open(config_path())
                 .unwrap();
             // let mut file = fs::File::create(CONFIG_FILE).expect("cannot create file");
             file.write("# Change lines below for writinrg files\n".as_bytes())

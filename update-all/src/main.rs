@@ -1,15 +1,12 @@
-use clap::{self, App, Arg};
-// use serde::{Deserialize, Serialize};
-// use serde_yaml;
-// use std::format;
-use std::fs::{self, OpenOptions};
-use std::io;
-use std::io::prelude::*;
-use std::path::Path;
-
 #[macro_use]
 extern crate log;
 
+use std::fs::{self, OpenOptions};
+use std::io;
+use std::io::prelude::*;
+
+use clap::{self, App, Arg};
+use home::home_dir;
 use log::Level;
 use loggerv;
 
@@ -19,17 +16,54 @@ mod task_control;
 use cache::Cache;
 use task_control::TaskControl;
 
-/// A file that store commands to execute
-static CONFIG_FILE: &str = ".update_all.config.yaml";
-static CACHE_FILE: &str = ".update_time.json";
+// @TODO: remove unsafe use of static mut
+// this could be the bug for multithreading
+static mut IS_DEBUG: bool = false;
+
+/// Return the path of different config
+fn base_path() -> std::path::PathBuf {
+    let mut result_path = std::path::PathBuf::new();
+    result_path.push(".");
+    unsafe {
+        if !IS_DEBUG {
+            if let Some(mut home_path) = home_dir() {
+                home_path.push(".config");
+                home_path.push("update-all");
+                result_path = home_path;
+            }
+        }
+    }
+    // make sure result_path exists
+    if !result_path.exists() {
+        info!("Create base folder: {:#?}", result_path);
+        fs::create_dir_all(&result_path).unwrap();
+    }
+    result_path
+}
+
+/// Return the path of the config file.
+/// World prefix with home folder, if exists.
+fn config_path() -> std::path::PathBuf {
+    let mut result = base_path();
+    result.push("update-all.config.yaml");
+    result
+}
+
+/// Return the path of the cache file.
+/// Would prefix with home folder, if exists.
+fn cache_path() -> std::path::PathBuf {
+    let mut result = base_path();
+    result.push("update-all.cache.json");
+    result
+}
 
 fn config_exists() -> bool {
-    Path::new(CONFIG_FILE).exists()
+    config_path().exists()
 }
 
 fn read_config() -> io::Result<String> {
     // @TODO: create config if not exists
-    let raw_config: String = fs::read_to_string(CONFIG_FILE)?;
+    let raw_config: String = fs::read_to_string(config_path())?;
     Ok(raw_config)
 }
 
@@ -37,7 +71,7 @@ fn read_config() -> io::Result<String> {
 fn write_config(str: String) -> io::Result<()> {
     let mut file = fs::OpenOptions::new()
         .append(true)
-        .open(CONFIG_FILE)
+        .open(config_path())
         .unwrap();
     file.write(str.as_bytes()).expect("Cannot write");
     Ok(())
@@ -64,6 +98,10 @@ impl CliConfig {
 }
 
 fn main() -> Result<(), io::Error> {
+    // @TODO: add option for dry run
+    // @TODO: add opiton for no-home
+    // @TODO: add option for editing config file
+    // @TODO: add subcommand for delete cache
     let app = App::new("update-all")
         .version("0.1")
         .about("Run your commands on daily basis")
@@ -86,16 +124,17 @@ fn main() -> Result<(), io::Error> {
                 .help("Create Default config file if not exists, would return after file has been created.")
                 .takes_value(false),
         );
-
-    let matches = app.get_matches();
-    let config = CliConfig::new(matches);
+    let config = CliConfig::new(app.get_matches());
 
     if config.debug {
         loggerv::init_with_level(Level::Trace).unwrap();
     } else {
         loggerv::init_with_level(Level::Info).unwrap();
     }
-    info!("Start to execute routines");
+    unsafe {
+        IS_DEBUG = config.debug;
+    }
+    info!("update-all Started");
 
     let cfg_exists = config_exists();
     if !cfg_exists {
@@ -106,16 +145,17 @@ fn main() -> Result<(), io::Error> {
                 OpenOptions::new()
                     .write(true)
                     .create_new(true)
-                    .open(CONFIG_FILE)
+                    .open(config_path())
                     .unwrap();
             }
-            let default_tasks = TaskControl::default_template();
+            let default_tasks = TaskControl::write_default_template();
             default_tasks
                 .export_routine_append()
                 .expect("cannot export routine");
-            println!("Create a default config file: {}", CONFIG_FILE);
+            println!("Create a default config file: {:?}", config_path().to_str());
         } else {
-            //@TODO: add colors
+            // @TODO: add colors
+            // @TODO: call for user to edit the config file
             println!("");
             println!("Config file not exist");
             println!("Run command with --create");

@@ -1,23 +1,24 @@
-use crate::CACHE_FILE;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::io::prelude::*;
-
-use std::path::Path;
 use std::time::SystemTime;
+
+use serde::{Deserialize, Serialize};
+
+use crate::cache_path;
+use crate::routine::Routine;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
-    pub name: String,
+    pub routine: Routine,
     pub last_mod: SystemTime,
 }
 
 impl CacheEntry {
-    pub fn new(name: String) -> CacheEntry {
+    pub fn new(routine: &Routine) -> CacheEntry {
         return CacheEntry {
-            name,
+            routine: routine.clone(),
             last_mod: SystemTime::now(),
         };
     }
@@ -28,7 +29,7 @@ impl CacheEntry {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cache {
-    pub entries: HashMap<String, CacheEntry>,
+    pub entries: HashMap<u64, CacheEntry>,
 }
 
 impl Cache {
@@ -40,20 +41,20 @@ impl Cache {
     // @TODO: turn Cache into a "namespace" thing...
     pub fn ensure_cache_file() {
         trace!("execute ensure_cache_file");
-        let cache_path = Path::new(CACHE_FILE);
-        if !cache_path.exists() {
-            fs::File::create(cache_path).unwrap();
+        let cache = cache_path();
+        if !cache.exists() {
+            fs::File::create(cache).unwrap();
         }
     }
 
     pub fn from_cache_file() -> Cache {
-        let cache_raw: String = fs::read_to_string(CACHE_FILE).expect("cannot read cache data");
+        let cache_raw: String = fs::read_to_string(cache_path()).expect("cannot read cache data");
         let cache: Cache = serde_json::from_str(&cache_raw).expect("cannot parse cache data");
         return cache;
     }
 
     pub fn could_load_from_file() -> bool {
-        let result = match fs::read_to_string(CACHE_FILE) {
+        let result = match fs::read_to_string(cache_path()) {
             Ok(cache_raw) => match serde_json::from_str::<Cache>(&cache_raw) {
                 Ok(_) => true,
                 Err(_) => true,
@@ -73,7 +74,7 @@ impl Cache {
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
-            .open(CACHE_FILE)
+            .open(cache_path())
             .unwrap();
         file.write(cache_raw.as_bytes())
             .expect("Canot write cache to file");
@@ -81,23 +82,23 @@ impl Cache {
     }
 
     pub fn remove_file() -> io::Result<()> {
-        let cache_path = Path::new(CACHE_FILE);
-        if cache_path.exists() {
+        let cache = cache_path();
+        if cache.exists() {
             debug!("Delete cache file");
-            fs::remove_file(cache_path).expect("Cannot remove cache file")
+            fs::remove_file(cache).expect("Cannot remove cache file")
         }
         Cache::ensure_cache_file();
         Ok(())
     }
 
-    pub fn update(&mut self, key: &String) -> io::Result<()> {
-        if self.entries.contains_key(key) {
-            if let Some(entry) = self.entries.get_mut(key) {
+    pub fn update(&mut self, routine: &Routine) -> io::Result<()> {
+        let key = routine.get_hash();
+        if self.entries.contains_key(&key) {
+            if let Some(entry) = self.entries.get_mut(&key) {
                 entry.update();
             }
         } else {
-            self.entries
-                .insert(key.clone(), CacheEntry::new(key.clone()));
+            self.entries.insert(key.clone(), CacheEntry::new(routine));
         }
         Ok(())
     }

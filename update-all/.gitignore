@@ -1,6 +1,6 @@
 /target
-\.*.yaml
-\.*.json
+*.yaml
+*.json
 
 # General
 .DS_Store
