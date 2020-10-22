@@ -19,7 +19,7 @@ pub struct TaskControl {
 
 impl TaskControl {
     /// execute all routines
-    pub fn execute_all(&mut self) -> io::Result<()> {
+    pub fn execute_all(&mut self, dry_run: bool) -> io::Result<()> {
         debug!("run TaskControl.execute_all");
         for routine in self.routines.iter() {
             let key = routine.get_hash();
@@ -42,7 +42,7 @@ impl TaskControl {
             }
             if should_execute {
                 debug!("Should update");
-                if let Ok(_) = routine.execute() {
+                if let Ok(_) = routine.execute(dry_run) {
                     self.cache.update(routine)?;
                     debug!("Update cache and flush out..");
                     self.cache.export()?;
@@ -50,8 +50,15 @@ impl TaskControl {
             } else {
                 if let Some(secs_before) = updated_secs_before {
                     let dura = chrono::Local::now() - chrono::Duration::seconds(secs_before);
-                    // @TODO: show currently running command
-                    info!("{}", format!("Have update {}", HumanTime::from(dura)));
+                    info!(
+                        "{}",
+                        format!(
+                            "Skip `{} {:?}`: Have runned {}.",
+                            routine.name,
+                            routine.args,
+                            HumanTime::from(dura)
+                        )
+                    );
                 }
                 debug!("Cache entry exist. jump to the next");
             }

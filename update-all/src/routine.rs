@@ -34,7 +34,7 @@ impl Routine {
             args: self.args.clone(),
         }
     }
-    pub fn execute(&self) -> Result<(), io::Error> {
+    pub fn execute(&self, dry_run: bool) -> Result<(), io::Error> {
         let mut cmd = Command::new(self.name.clone());
         for arg in &self.args {
             cmd.arg(arg.clone());
@@ -44,10 +44,12 @@ impl Routine {
             format!("Running Command : {} {:?}", self.name, self.args)
         );
         // @TODO: provide an slient option
-        let mut child = cmd
-            .spawn()
-            .expect(&format!("Failed to execute command: {:?}", self.name));
-        let _ecode = child.wait().expect("Failed to wait on child");
+        if !dry_run {
+            let mut child = cmd
+                .spawn()
+                .expect(&format!("Failed to execute command: {:?}", self.name));
+            let _ecode = child.wait().expect("Failed to wait on child");
+        }
         Ok(())
     }
     pub fn get_hash(&self) -> u64 {

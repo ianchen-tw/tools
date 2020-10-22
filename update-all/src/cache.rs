@@ -57,7 +57,10 @@ impl Cache {
         let result = match fs::read_to_string(cache_path()) {
             Ok(cache_raw) => match serde_json::from_str::<Cache>(&cache_raw) {
                 Ok(_) => true,
-                Err(_) => true,
+                Err(_) => {
+                    warn!("Corrupted cache file, would rebuild a new one");
+                    false
+                }
             },
             Err(_) => false,
         };

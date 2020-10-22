@@ -19,13 +19,15 @@ use task_control::TaskControl;
 // @TODO: remove unsafe use of static mut
 // this could be the bug for multithreading
 static mut IS_DEBUG: bool = false;
+static mut NO_HOME: bool = false;
 
 /// Return the path of different config
 fn base_path() -> std::path::PathBuf {
     let mut result_path = std::path::PathBuf::new();
     result_path.push(".");
     unsafe {
-        if !IS_DEBUG {
+        // the base_path in DEBUG mode is default to be current dir.
+        if !IS_DEBUG && !NO_HOME {
             if let Some(mut home_path) = home_dir() {
                 home_path.push(".config");
                 home_path.push("update-all");
@@ -82,6 +84,8 @@ struct CliConfig {
     force_all: bool,
     debug: bool,
     create: bool,
+    dry: bool,
+    nohome: bool,
 }
 
 impl CliConfig {
@@ -89,17 +93,19 @@ impl CliConfig {
         let force_all = matches.is_present("force-all");
         let debug = matches.is_present("debug");
         let create = matches.is_present("create");
+        let dry = matches.is_present("dry");
+        let nohome = matches.is_present("nohome");
         return CliConfig {
             force_all,
             debug,
             create,
+            dry,
+            nohome,
         };
     }
 }
 
 fn main() -> Result<(), io::Error> {
-    // @TODO: add option for dry run
-    // @TODO: add opiton for no-home
     // @TODO: add option for editing config file
     // @TODO: add subcommand for delete cache
     let app = App::new("update-all")
@@ -123,6 +129,18 @@ fn main() -> Result<(), io::Error> {
                 .long("create")
                 .help("Create Default config file if not exists, would return after file has been created.")
                 .takes_value(false),
+        )
+        .arg(
+            Arg::with_name("nohome")
+            .long("nohome")
+            .help("read/write configs in current dir, (not from `~/.config`)")
+            .takes_value(false),
+        )
+        .arg(
+            Arg::with_name("dry")
+            .long("dry")
+            .help("Use dry run (Not executing the command).")
+            .takes_value(false),
         );
     let config = CliConfig::new(app.get_matches());
 
@@ -133,6 +151,7 @@ fn main() -> Result<(), io::Error> {
     }
     unsafe {
         IS_DEBUG = config.debug;
+        NO_HOME = config.nohome;
     }
     info!("update-all Started");
 
@@ -175,9 +194,14 @@ fn main() -> Result<(), io::Error> {
         let cache = Cache::from_cache_file();
         debug!("{}", format!("Cache: {:#?}", cache));
         taskctl.replace_cache(cache);
+    } else {
+        // Cache might be corrupted or simply not exists
+        Cache::remove_file().unwrap();
     }
 
     info!("Start to execute routines");
-    taskctl.execute_all().expect("Cannot execute command");
+    taskctl
+        .execute_all(config.dry)
+        .expect("Cannot execute command");
     Ok(())
 }
