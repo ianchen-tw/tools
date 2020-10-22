@@ -14,6 +14,7 @@ remove:
 	python3 ./install.py --remove
 
 install:
+	rm -rf ./build
 	python3 ./install.py
 
 $(BUILD_DIR):
