@@ -4,8 +4,10 @@ extern crate log;
 use std::fs::{self, OpenOptions};
 use std::io;
 use std::io::prelude::*;
+use std::process::Command;
 
 use clap::{self, App, Arg};
+use colored::*;
 use home::home_dir;
 use log::Level;
 use loggerv;
@@ -64,7 +66,6 @@ fn config_exists() -> bool {
 }
 
 fn read_config() -> io::Result<String> {
-    // @TODO: create config if not exists
     let raw_config: String = fs::read_to_string(config_path())?;
     Ok(raw_config)
 }
@@ -86,6 +87,7 @@ struct CliConfig {
     create: bool,
     dry: bool,
     nohome: bool,
+    edit: bool,
 }
 
 impl CliConfig {
@@ -95,18 +97,30 @@ impl CliConfig {
         let create = matches.is_present("create");
         let dry = matches.is_present("dry");
         let nohome = matches.is_present("nohome");
+        let edit = matches.is_present("edit");
         return CliConfig {
             force_all,
             debug,
             create,
             dry,
             nohome,
+            edit,
         };
     }
 }
 
+/// Use vscode to open the config file
+fn open_editing_config() {
+    // @TODO: support default editor
+    warn!("open config file");
+    let mut cmd = Command::new("code");
+    cmd.arg(config_path());
+
+    let mut child = cmd.spawn().expect("Failed to spwan process");
+    let _ecode = child.wait().expect("Failed to edit command");
+}
+
 fn main() -> Result<(), io::Error> {
-    // @TODO: add option for editing config file
     // @TODO: add subcommand for delete cache
     let app = App::new("update-all")
         .version("0.1")
@@ -124,11 +138,19 @@ fn main() -> Result<(), io::Error> {
                 .long("debug")
                 .takes_value(false),
         )
+        // @TODO: turn create argument into a subcommand
         .arg(
             Arg::with_name("create")
                 .long("create")
                 .help("Create Default config file if not exists, would return after file has been created.")
                 .takes_value(false),
+        )
+        // @TODO: turn edit argument into a subcommand
+        .arg(
+            Arg::with_name("edit")
+            .long("edit")
+            .help("open the config file for editing")
+            .takes_value(false),
         )
         .arg(
             Arg::with_name("nohome")
@@ -157,7 +179,7 @@ fn main() -> Result<(), io::Error> {
 
     let cfg_exists = config_exists();
     if !cfg_exists {
-        debug!("Config file doesn't exists");
+        debug!("Cannot find config file");
         if config.create {
             {
                 // ensure file exists
@@ -172,14 +194,38 @@ fn main() -> Result<(), io::Error> {
                 .export_routine_append()
                 .expect("cannot export routine");
             println!("Create a default config file: {:?}", config_path().to_str());
+            if config.edit {
+                // edit a newly create config file
+                open_editing_config();
+            } else {
+                // info!("{}", "please use".green()  to edit your config file".red());
+                info!("{}", "please use:".green());
+                info!(
+                    "{}{}",
+                    " code ".yellow(),
+                    config_path().to_str().unwrap().yellow()
+                );
+                info!("{}", "to edit your config file".green());
+            }
         } else {
-            // @TODO: add colors
-            // @TODO: call for user to edit the config file
-            println!("");
-            println!("Config file not exist");
-            println!("Run command with --create");
-            println!("To create a config file");
+            warn!("{}", "Config file doesn't exists".red());
+            warn!("{}", "Run command with:".red());
+            warn!("{}", "   --create");
+            warn!("{}", "to create a config file".red());
+            warn!(
+                "{}{}{}{}{}",
+                "(or use ".red(),
+                "--edit",
+                " with ".red(),
+                "--create",
+                " to open the config file)".red()
+            );
         }
+        return Ok(());
+    }
+    if config.edit {
+        // editing existing config file
+        open_editing_config();
         return Ok(());
     }
     info!("Load config from file");
@@ -203,5 +249,6 @@ fn main() -> Result<(), io::Error> {
     taskctl
         .execute_all(config.dry)
         .expect("Cannot execute command");
+    info!("Success: Routines executed");
     Ok(())
 }
