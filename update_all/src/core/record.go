@@ -29,28 +29,36 @@ func CreateRecordMap() RecordMap {
 	return RecordMap{Map: make(map[string]RunRecord)}
 }
 
-// RunRoutineIfOutdated run routines that are not runned in the given period
-// dry: dry run, do not execute
-func (m *RecordMap) RunRoutineIfOutdated(routine Routine, dry bool) {
-	var execute bool = false
+func (r *RunRecord) shouldUpdate() (ans bool, timeSinceLastRun time.Duration) {
+	timeSinceLastRun = time.Now().Sub(r.LastRun).Round(100 * time.Millisecond)
+	minInterval := r.Routine.Interval.ToDuration()
+	log.WithFields(log.Fields{"timeSinceLastRun": timeSinceLastRun}).Debug("Routine: ", r.Routine.String())
+	return timeSinceLastRun > minInterval, timeSinceLastRun
+}
 
+func (m *RecordMap) update(record RunRecord) {
+	record.update()
+	m.Map[record.Routine.hash()] = record
+}
+
+func (m *RecordMap) getRecord(routine Routine) RunRecord {
 	if record, ok := m.Map[routine.hash()]; ok {
-		timeToLastRun := time.Now().Sub(record.LastRun).Round(100 * time.Millisecond)
-		minInterval := record.Routine.Interval.ToDuration()
-		log.WithFields(log.Fields{"definedInterval": minInterval, "timeSinceLastRun": timeToLastRun}).Debug("Routine: ", record.Routine.String())
-		if timeToLastRun > minInterval {
-			execute = true
-			record.update()
-			m.Map[record.Routine.hash()] = record
-		} else {
-			log.Info("Skip: ", routine.String(), " excuted ", timeToLastRun, " ago")
-		}
-	} else {
-		execute = true
-		m.Map[routine.hash()] = RunRecord{Routine: routine, LastRun: time.Now()}
+		return record
 	}
+	return RunRecord{Routine: routine}
+}
 
-	if execute {
+// RunRoutineIfOutdated run routines that are not runned in the given period
+func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skipExecute bool) {
+	record := m.getRecord(routine)
+	doUpdate, sinceLastRun := record.shouldUpdate()
+	if doUpdate || forceUpdate {
+		m.update(record)
+	} else {
+		log.Info("Skip: ", routine.String(), ", execute ", sinceLastRun, " ago")
+	}
+	log.Warn("Execute: ", routine.String())
+	if !skipExecute {
 		routine.Execute()
 	}
 }

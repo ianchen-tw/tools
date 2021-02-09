@@ -10,10 +10,10 @@ func flushToFile(filename string, data []byte) error {
 		return err
 	}
 	defer file.Close()
+	defer file.Sync()
 	_, err = file.Write(data)
 	if err != nil {
 		return err
 	}
-	file.Sync()
 	return nil
 }

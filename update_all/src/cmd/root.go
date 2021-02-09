@@ -10,19 +10,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	// FlagDebug Debug mode
+	flagDebug bool
+
+	// FlagNoHome Do not fetch user home folder
+	// flagNoHome bool
+
+	//FlagDryRun Do not execute routine
+	flagSkipExecute bool
+
+	//FlagForceUpdate Ignore minimum run period
+	flagForceUpdate bool
+)
+
 func newCmdRoot() *cobra.Command {
-	// TODO: add persistent option: debug
-	// TODO: add persistent option: nohome
-	// TODO: make option `dry` persistent
 	cmd := &cobra.Command{
 		Use:   "update-all",
 		Short: "Update All",
 		Long:  "Automatically run your routines",
 		Run:   startUpdateAll,
 	}
-	cmd.Flags().Bool("dry", false, "Dry run")
-	cmd.Flags().BoolP("force", "f", false, "Force to run all routines")
-	cmd.PersistentFlags().Bool("debug", false, "Start in debug mode")
+	cmd.PersistentFlags().BoolVarP(&flagSkipExecute, "dry", "", false, "Dry run, do not execute routines")
+	cmd.PersistentFlags().BoolVarP(&flagForceUpdate, "force", "f", false, "Force to run all routines")
+	cmd.PersistentFlags().BoolVarP(&flagDebug, "debug", "", false, "Start in debug mode")
 
 	cmd.AddCommand(newCmdEdit())
 	cmd.AddCommand(newCmdInit())
@@ -30,11 +41,14 @@ func newCmdRoot() *cobra.Command {
 }
 
 func startUpdateAll(cmd *cobra.Command, args []string) {
-	isDebug, _ := cmd.Flags().GetBool("debug")
-	fmt.Println("root: debug:", isDebug)
+	if flagDebug {
+		log.SetLevel(log.DebugLevel)
+		log.Info("Start in Debug mode")
+	}
 
 	cache := core.CreateRecordMap()
 	cache.TryLoad()
+	defer cache.Flush()
 
 	routines, err := core.LoadRoutines()
 	if err != nil {
@@ -44,9 +58,9 @@ func startUpdateAll(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	for _, routine := range routines {
-		cache.RunRoutineIfOutdated(routine, true)
-		cache.Flush()
+		cache.RunRoutineIfOutdated(routine, flagForceUpdate, flagSkipExecute)
 	}
+
 }
 
 var rootCmd = newCmdRoot()

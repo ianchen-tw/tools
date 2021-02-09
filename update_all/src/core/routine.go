@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -45,7 +43,6 @@ func (r Routine) String() string {
 
 // Execute : Execute routine
 func (r *Routine) Execute() {
-	log.Warn("Execute: ", r.String())
 }
 
 func (r *Routine) hash() string {
