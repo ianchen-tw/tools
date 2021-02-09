@@ -17,3 +17,11 @@ func flushToFile(filename string, data []byte) error {
 	}
 	return nil
 }
+
+func ifFileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
+}

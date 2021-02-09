@@ -74,6 +74,11 @@ func FlushRoutines(routines []Routine) {
 	check(err)
 }
 
+// IfRoutineFileExists check if config file already exists
+func IfRoutineFileExists() bool {
+	return ifFileExists(routineFileName)
+}
+
 //LoadRoutines load target routines from config file
 func LoadRoutines() ([]Routine, error) {
 	rawData, err := ioutil.ReadFile(routineFileName)
