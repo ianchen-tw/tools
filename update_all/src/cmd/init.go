@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"update_all/src/core"
 
 	"github.com/spf13/cobra"
 )
@@ -11,7 +12,10 @@ func newCmdInit() *cobra.Command {
 		Use:   "init",
 		Short: "Create default config",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Run create command")
+			// TODO: if file exits, ask user to confirm override it
+			routines := core.DefaultRoutines()
+			core.FlushRoutines(routines)
+			fmt.Println("Successfully init config")
 		},
 	}
 	return cmd

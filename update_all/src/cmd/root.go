@@ -3,6 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"update_all/src/core"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
@@ -29,6 +32,21 @@ func newCmdRoot() *cobra.Command {
 func startUpdateAll(cmd *cobra.Command, args []string) {
 	isDebug, _ := cmd.Flags().GetBool("debug")
 	fmt.Println("root: debug:", isDebug)
+
+	cache := core.CreateRecordMap()
+	cache.TryLoad()
+
+	routines, err := core.LoadRoutines()
+	if err != nil {
+		// Can't find routine file
+		log.Error("Unable to find file")
+		log.Error("Use `update-all create` to create a config file first")
+		os.Exit(1)
+	}
+	for _, routine := range routines {
+		cache.RunRoutineIfOutdated(routine, true)
+		cache.Flush()
+	}
 }
 
 var rootCmd = newCmdRoot()

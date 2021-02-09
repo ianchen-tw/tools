@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // RunRecord Store the time that a routine gets run
@@ -27,12 +29,29 @@ func CreateRecordMap() RecordMap {
 	return RecordMap{Map: make(map[string]RunRecord)}
 }
 
-// UpdateRecord update the timestamp for a single RunRecord
-func (m *RecordMap) UpdateRecord(routine Routine) {
+// RunRoutineIfOutdated run routines that are not runned in the given period
+// dry: dry run, do not execute
+func (m *RecordMap) RunRoutineIfOutdated(routine Routine, dry bool) {
+	var execute bool = false
+
 	if record, ok := m.Map[routine.hash()]; ok {
-		record.update()
+		timeToLastRun := time.Now().Sub(record.LastRun).Round(100 * time.Millisecond)
+		minInterval := record.Routine.Interval.ToDuration()
+		log.WithFields(log.Fields{"definedInterval": minInterval, "timeSinceLastRun": timeToLastRun}).Debug("Routine: ", record.Routine.String())
+		if timeToLastRun > minInterval {
+			execute = true
+			record.update()
+			m.Map[record.Routine.hash()] = record
+		} else {
+			log.Info("Skip: ", routine.String(), " excuted ", timeToLastRun, " ago")
+		}
 	} else {
+		execute = true
 		m.Map[routine.hash()] = RunRecord{Routine: routine, LastRun: time.Now()}
+	}
+
+	if execute {
+		routine.Execute()
 	}
 }
 
@@ -47,8 +66,8 @@ func (m *RecordMap) Flush() {
 	flushToFile(runRecordFilename, m.export())
 }
 
-// Load RecordMap from file
-func (m *RecordMap) Load() error {
+// TryLoad try to RecordMap from file
+func (m *RecordMap) TryLoad() error {
 	rawData, err := ioutil.ReadFile(runRecordFilename)
 	if err != nil {
 		return err
