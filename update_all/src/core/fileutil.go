@@ -1,6 +1,26 @@
 package core
 
-import "os"
+import (
+	"log"
+	"os"
+	"path/filepath"
+)
+
+func ensureDirExists(fpath string) {
+	os.MkdirAll(filepath.Dir(fpath), os.ModePerm)
+}
+
+func getActualFileLoc(filename string) string {
+	if UseWorkdirToFetch {
+		mydir, _ := os.Getwd()
+		return filepath.Join(mydir, filename)
+	}
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic(err)
+	}
+	return filepath.Join(homedir, ".config", "update-all", filename)
+}
 
 // Flush byte data to file.
 // Create one if not exists, overwrite otherwise

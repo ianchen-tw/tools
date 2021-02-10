@@ -14,8 +14,8 @@ var (
 	// FlagDebug Debug mode
 	flagDebug bool
 
-	// FlagNoHome Do not fetch user home folder
-	// flagNoHome bool
+	//FlagNoHome Do not fetch user home folder
+	flagNoHome bool
 
 	//FlagDryRun Do not execute routine
 	flagSkipExecute bool
@@ -29,11 +29,23 @@ func newCmdRoot() *cobra.Command {
 		Use:   "update-all",
 		Short: "Update All",
 		Long:  "Automatically run your routines",
-		Run:   startUpdateAll,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if flagDebug {
+				log.SetLevel(log.DebugLevel)
+				log.Debug("Start cobra PreRun hook")
+				log.Info("Start in Debug mode")
+				core.IsDebug = true
+			}
+			if flagNoHome {
+				core.UseWorkdirToFetch = true
+			}
+		},
+		Run: startUpdateAll,
 	}
 	cmd.PersistentFlags().BoolVarP(&flagSkipExecute, "dry", "", false, "Dry run, do not execute routines")
 	cmd.PersistentFlags().BoolVarP(&flagForceUpdate, "force", "f", false, "Force to run all routines")
 	cmd.PersistentFlags().BoolVarP(&flagDebug, "debug", "", false, "Start in debug mode")
+	cmd.PersistentFlags().BoolVarP(&flagNoHome, "nohome", "", true, "use working dir to store/read config")
 
 	cmd.AddCommand(newCmdEdit())
 	cmd.AddCommand(newCmdInit())
@@ -41,11 +53,6 @@ func newCmdRoot() *cobra.Command {
 }
 
 func startUpdateAll(cmd *cobra.Command, args []string) {
-	if flagDebug {
-		log.SetLevel(log.DebugLevel)
-		log.Info("Start in Debug mode")
-	}
-
 	cache := core.CreateRecordMap()
 	err := cache.TryLoad()
 	if err != nil {
@@ -57,7 +64,7 @@ func startUpdateAll(cmd *cobra.Command, args []string) {
 	routines, err := core.LoadRoutines()
 	if err != nil {
 		// Can't find routine file
-		log.Error("Unable to find file")
+		log.Error("Unable to find file: ", core.GetRoutineFile())
 		log.Error("Use `update-all create` to create a config file first")
 		os.Exit(1)
 	}

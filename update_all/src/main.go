@@ -12,11 +12,5 @@ func init() {
 }
 
 func main() {
-	// routines := core.DefaultRoutines()
-	// fmt.Printf("tasks: %+v\n", routines)
 	cmd.Execute()
-	// // fmt.Println(m)
-
-	// core.FlushRoutines(routines)
-	// core.LoadRoutines()
 }

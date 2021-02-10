@@ -20,16 +20,20 @@ type RecordMap struct {
 	Map map[string]RunRecord `json:"Records"`
 }
 
-// CreateRecordMap create a clean RecordMap
-func CreateRecordMap() RecordMap {
-	return RecordMap{Map: make(map[string]RunRecord)}
-}
+// GetCurrentTime : function to get the system time (override in testing environment)
+//	https://stackoverflow.com/questions/18970265/is-there-an-easy-way-to-stub-out-time-now-globally-during-test
+var GetCurrentTime = time.Now
 
 func (r *RunRecord) shouldUpdate() (ans bool, timeSinceLastRun time.Duration) {
-	timeSinceLastRun = time.Now().Sub(r.LastRun).Round(100 * time.Millisecond)
+	timeSinceLastRun = GetCurrentTime().Sub(r.LastRun).Round(100 * time.Millisecond)
 	minInterval := r.Routine.Interval.ToDuration()
 	log.WithFields(log.Fields{"lastRun": r.LastRun, "timeSinceLastRun": timeSinceLastRun}).Debug("Get Routine info: ", r.Routine.String())
 	return timeSinceLastRun > minInterval, timeSinceLastRun
+}
+
+// CreateRecordMap create a clean RecordMap
+func CreateRecordMap() RecordMap {
+	return RecordMap{Map: make(map[string]RunRecord)}
 }
 
 func (m *RecordMap) update(record RunRecord) {
@@ -52,13 +56,13 @@ func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skip
 	doUpdate, sinceLastRun := record.shouldUpdate()
 	if doUpdate || forceUpdate {
 		m.update(record)
-	} else {
-		log.Info("Skip: ", routine.String(), ", execute ", sinceLastRun, " ago")
+		log.Info("Execute: ", routine.String())
+		if !skipExecute {
+			routine.Execute()
+		}
+		return
 	}
-	if !skipExecute {
-		log.Warn("Execute: ", routine.String())
-		routine.Execute()
-	}
+	log.Info("Skip: ", routine.String(), ", execute ", sinceLastRun, " ago")
 }
 
 // export RecordMap to byte string
@@ -67,14 +71,21 @@ func (m *RecordMap) export() []byte {
 	return rawStr
 }
 
+// GetRecordMapFile get the location of recordMap file
+func GetRecordMapFile() string {
+	return getActualFileLoc(runRecordFilename)
+}
+
 // Flush RecordMap to file
 func (m *RecordMap) Flush() {
-	flushToFile(runRecordFilename, m.export())
+	fpath := GetRecordMapFile()
+	ensureDirExists(fpath)
+	flushToFile(fpath, m.export())
 }
 
 // TryLoad try to RecordMap from file
 func (m *RecordMap) TryLoad() error {
-	rawData, err := ioutil.ReadFile(runRecordFilename)
+	rawData, err := ioutil.ReadFile(GetRecordMapFile())
 	if err != nil {
 		return err
 	}
