@@ -37,7 +37,7 @@ func CreateRecordMap() RecordMap {
 }
 
 func (m *RecordMap) update(record RunRecord) {
-	record.LastRun = time.Now()
+	record.LastRun = GetCurrentTime()
 	m.Map[record.Routine.hash()] = record
 }
 
