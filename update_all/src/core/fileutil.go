@@ -5,7 +5,7 @@ import "os"
 // Flush byte data to file.
 // Create one if not exists, overwrite otherwise
 func flushToFile(filename string, data []byte) error {
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}

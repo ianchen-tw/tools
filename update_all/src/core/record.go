@@ -15,10 +15,6 @@ type RunRecord struct {
 	LastRun time.Time `json:"Time"`
 }
 
-func (r *RunRecord) update() {
-	r.LastRun = time.Now()
-}
-
 // RecordMap a map strcuture to store RunRecord
 type RecordMap struct {
 	Map map[string]RunRecord `json:"Records"`
@@ -32,12 +28,12 @@ func CreateRecordMap() RecordMap {
 func (r *RunRecord) shouldUpdate() (ans bool, timeSinceLastRun time.Duration) {
 	timeSinceLastRun = time.Now().Sub(r.LastRun).Round(100 * time.Millisecond)
 	minInterval := r.Routine.Interval.ToDuration()
-	log.WithFields(log.Fields{"timeSinceLastRun": timeSinceLastRun}).Debug("Routine: ", r.Routine.String())
+	log.WithFields(log.Fields{"lastRun": r.LastRun, "timeSinceLastRun": timeSinceLastRun}).Debug("Get Routine info: ", r.Routine.String())
 	return timeSinceLastRun > minInterval, timeSinceLastRun
 }
 
 func (m *RecordMap) update(record RunRecord) {
-	record.update()
+	record.LastRun = time.Now()
 	m.Map[record.Routine.hash()] = record
 }
 
@@ -51,21 +47,23 @@ func (m *RecordMap) getRecord(routine Routine) RunRecord {
 // RunRoutineIfOutdated run routines that are not runned in the given period
 func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skipExecute bool) {
 	record := m.getRecord(routine)
+	log.Debug("Get record from map: ", record)
+	record.Routine = routine
 	doUpdate, sinceLastRun := record.shouldUpdate()
 	if doUpdate || forceUpdate {
 		m.update(record)
 	} else {
 		log.Info("Skip: ", routine.String(), ", execute ", sinceLastRun, " ago")
 	}
-	log.Warn("Execute: ", routine.String())
 	if !skipExecute {
+		log.Warn("Execute: ", routine.String())
 		routine.Execute()
 	}
 }
 
 // export RecordMap to byte string
 func (m *RecordMap) export() []byte {
-	rawStr, _ := json.MarshalIndent(*m, "", strings.Repeat(" ", 4))
+	rawStr, _ := json.MarshalIndent(*m, "", strings.Repeat(" ", 2))
 	return rawStr
 }
 
@@ -80,6 +78,9 @@ func (m *RecordMap) TryLoad() error {
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(rawData, m)
+	err = json.Unmarshal(rawData, m)
+	if err != nil {
+		return err
+	}
 	return nil
 }

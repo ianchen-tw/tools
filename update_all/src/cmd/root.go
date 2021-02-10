@@ -47,7 +47,11 @@ func startUpdateAll(cmd *cobra.Command, args []string) {
 	}
 
 	cache := core.CreateRecordMap()
-	cache.TryLoad()
+	err := cache.TryLoad()
+	if err != nil {
+		log.Warn(err)
+	}
+	log.Debug("Cache state: ", cache)
 	defer cache.Flush()
 
 	routines, err := core.LoadRoutines()
