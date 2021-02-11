@@ -41,7 +41,8 @@ func (m *RecordMap) update(record RunRecord) {
 	m.Map[record.Routine.hash()] = record
 }
 
-func (m *RecordMap) getRecord(routine Routine) RunRecord {
+// fetchRecord get a record from routine to test
+func (m *RecordMap) fetchRecord(routine Routine) RunRecord {
 	if record, ok := m.Map[routine.hash()]; ok {
 		return record
 	}
@@ -50,7 +51,7 @@ func (m *RecordMap) getRecord(routine Routine) RunRecord {
 
 // RunRoutineIfOutdated run routines that are not runned in the given period
 func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skipExecute bool) {
-	record := m.getRecord(routine)
+	record := m.fetchRecord(routine)
 	log.Debug("Get record from map: ", record)
 	record.Routine = routine
 	doUpdate, sinceLastRun := record.shouldUpdate()

@@ -1,17 +1,27 @@
 package core
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
 
-// Patch the underlying function to fix result
+func TestRecordMapFetch(t *testing.T) {
+	m := CreateRecordMap()
+	routine := *createRoutine(Interval{Minute: 8}, "echo", "good")
+
+	record := m.fetchRecord(routine)
+	if reflect.DeepEqual(record.Routine, routine) {
+		t.Errorf("Get different routine expect:%+v, get:%+v", routine, record.Routine)
+	}
+}
 
 func TestRecordMapUpdate(t *testing.T) {
 	date := func(year int, mon time.Month, day int) time.Time {
 		return time.Date(year, mon, day, 0, 0, 0, 0, time.UTC)
 	}
 
+	// Patch the underlying function to fix result
 	GetCurrentTime = func() time.Time {
 		return date(1996, 11, 15)
 	}
@@ -51,6 +61,7 @@ func TestRunRecordShouldUpdate(t *testing.T) {
 			given: Interval{Hour: 99}, expect: true},
 	}
 
+	// Patch the underlying function to fix result
 	GetCurrentTime = func() time.Time {
 		return time.Date(1996, 11, 15, 0, 0, 0, 0, time.UTC)
 	}
