@@ -1,5 +1,5 @@
 BUILD_DIR := build
-TARGETS := update-all
+TARGETS := update_all
 
 all: $(TARGETS)
 
@@ -8,14 +8,10 @@ all: $(TARGETS)
 # Build program inside targets
 $(TARGETS): %: $(BUILD_DIR)
 	make -C $@
-	cp $@/target/release/$@ $(BUILD_DIR)/
+	cp $@/bin/main $(BUILD_DIR)/$@
 
-remove:
-	python3 ./install.py --remove
-
-install:
-	rm -rf ./build
-	python3 ./install.py
+install: $(TARGETS)
+	python3 install.py
 
 $(BUILD_DIR):
 	mkdir -p $@

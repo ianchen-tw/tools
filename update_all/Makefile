@@ -1,12 +1,17 @@
-ALL: run
+BIN:= bin/main
 
-.PHONY: run
-run:
-	go run ./src
+ALL: build
 
+
+.PHONY: build
 build:
-	go build ./src/main.go
+	go build -o $(BIN) ./src/main.go
 
 .PHONY: clean
 clean:
-	rm -f *.json *.yaml main
+	rm -f *.json *.yaml
+	rm -rf bin
+
+.PHONY: test
+test:
+	go test -v ./... --cover
