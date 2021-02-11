@@ -4,6 +4,22 @@ import (
 	"testing"
 )
 
+func TestParseRoutines(t *testing.T) {
+	data := `
+- Args: [pyenv, update]
+  Interval:
+    Minute: 60
+- Args: [pyenv, rehash]
+  Interval: {}
+- Args: [tldr, --update]
+  Interval:
+    Hour: 24
+`
+	_, err := parseRoutines([]byte(data))
+	if err != nil {
+		t.Error("Cannot parse data", data, err)
+	}
+}
 func TestRoutineHash(t *testing.T) {
 	r := []Routine{
 		*createRoutine(Interval{Minute: 2}, "ls", "-a"),

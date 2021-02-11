@@ -93,14 +93,21 @@ func IfRoutineFileExists() bool {
 	return ifFileExists(GetRoutineFile())
 }
 
+func parseRoutines(data []byte) ([]Routine, error) {
+	var routines []Routine
+	err := yaml.Unmarshal(data, &routines)
+	if err != nil {
+		return nil, err
+	}
+	return routines, nil
+}
+
 //LoadRoutines load target routines from config file
 func LoadRoutines() ([]Routine, error) {
 	rawData, err := ioutil.ReadFile(GetRoutineFile())
 	if err != nil {
 		return nil, err
 	}
-	var routines []Routine
-	yaml.Unmarshal(rawData, &routines)
-
-	return routines, nil
+	routines, err := parseRoutines(rawData)
+	return routines, err
 }
