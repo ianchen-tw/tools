@@ -11,7 +11,7 @@ func TestRecordMapFetch(t *testing.T) {
 	routine := *createRoutine(Interval{Minute: 8}, "echo", "good")
 
 	record := m.fetchRecord(routine)
-	if reflect.DeepEqual(record.Routine, routine) {
+	if !reflect.DeepEqual(record.Routine, routine) {
 		t.Errorf("Get different routine expect:%+v, get:%+v", routine, record.Routine)
 	}
 }
