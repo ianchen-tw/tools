@@ -45,7 +45,7 @@ func newCmdRoot() *cobra.Command {
 	cmd.PersistentFlags().BoolVarP(&flagSkipExecute, "dry", "", false, "Dry run, do not execute routines")
 	cmd.PersistentFlags().BoolVarP(&flagForceUpdate, "force", "f", false, "Force to run all routines")
 	cmd.PersistentFlags().BoolVarP(&flagDebug, "debug", "", false, "Start in debug mode")
-	cmd.PersistentFlags().BoolVarP(&flagNoHome, "nohome", "", true, "use working dir to store/read config")
+	cmd.PersistentFlags().BoolVarP(&flagNoHome, "nohome", "", false, "use working dir to store/read config")
 
 	cmd.AddCommand(newCmdEdit())
 	cmd.AddCommand(newCmdInit())
@@ -65,7 +65,7 @@ func startUpdateAll(cmd *cobra.Command, args []string) {
 	if err != nil {
 		// Can't find routine file
 		log.Error("Unable to find file: ", core.GetRoutineFile())
-		log.Error("Use `update-all create` to create a config file first")
+		log.Error("Use `update-all init` to create a config file first")
 		os.Exit(1)
 	}
 	for _, routine := range routines {

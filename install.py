@@ -17,7 +17,7 @@ def run_install():
             tool_name = entry.name
             src = start_path.joinpath(tool_name)
             dst = install_path.joinpath(f".{tool_name}")
-            # shutil.copy(src, dst)
+            shutil.copy(src, dst)
             print(f" copy {src} to {dst}")
     print(f"finish installation")
 

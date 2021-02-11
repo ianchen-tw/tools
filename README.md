@@ -6,7 +6,7 @@ tools of mine
 
 ## Prerequisite
 
-`python3` and `cargo` is needed
+`python3` and `golang` is needed
 
 ## Installation
 
@@ -16,6 +16,4 @@ make install
 
 ## Uninstall
 
-``` sh
-make remove
-```
+Remove binaries under your `~/bin`

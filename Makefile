@@ -1,9 +1,9 @@
 BUILD_DIR := build
-TARGETS := update_all
+TARGETS := update-all
 
 all: $(TARGETS)
 
-.PHONY: install remove
+.PHONY: install remove $(TARGETS)
 
 # Build program inside targets
 $(TARGETS): %: $(BUILD_DIR)

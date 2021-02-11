@@ -6,5 +6,5 @@ var IsDebug bool
 // UseWorkdirToFetch read config/ write cache to work dir
 var UseWorkdirToFetch bool
 
-var runRecordFilename = "runRecords.json"
-var routineFileName = "routines.yaml"
+var runRecordFilename = "runRecord.json"
+var routineFileName = "config.yaml"
