@@ -6,6 +6,42 @@ import (
 	"time"
 )
 
+func TestParseRecordMap(t *testing.T) {
+	data := `
+	{
+		"Records": {
+		  "34c094ddda9089765ef94e2b461f9a2c62913298faf3f6d338e47dbb961befee": {
+			"Routine": {
+			  "Args": ["poetry", "self", "update"],
+			  "Interval": {
+				"Hour": 24,
+				"Minute": 0,
+				"Second": 0
+			  }
+			},
+			"Time": "2021-02-11T22:12:23.912546+08:00"
+		  },
+		  "5b75091b0cb2464dcd693fd12d41e00b796833170006822d27d5537491343c7e": {
+			"Routine": {
+			  "Args": ["pyenv", "update"],
+			  "Interval": {
+				"Hour": 0,
+				"Minute": 60,
+				"Second": 0
+			  }
+			},
+			"Time": "2021-02-11T22:12:17.577906+08:00"
+		  }
+		}
+	}
+`
+	m := CreateRecordMap()
+	err := m.parseRecordMap([]byte(data))
+	if err != nil {
+		t.Error("Cannot parse data", data, err)
+	}
+}
+
 func TestRecordMapFetch(t *testing.T) {
 	m := CreateRecordMap()
 	routine := *createRoutine(Interval{Minute: 8}, "echo", "good")

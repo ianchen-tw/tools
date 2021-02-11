@@ -84,15 +84,16 @@ func (m *RecordMap) Flush() {
 	flushToFile(fpath, m.export())
 }
 
+func (m *RecordMap) parseRecordMap(data []byte) error {
+	err := json.Unmarshal(data, m)
+	return err
+}
+
 // TryLoad try to RecordMap from file
 func (m *RecordMap) TryLoad() error {
 	rawData, err := ioutil.ReadFile(GetRecordMapFile())
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(rawData, m)
-	if err != nil {
-		return err
-	}
-	return nil
+	return m.parseRecordMap(rawData)
 }
