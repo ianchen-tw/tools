@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // Run run shell command
@@ -12,7 +13,7 @@ func Run(args ...string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Run:", args)
+	fmt.Println(emoji_run, strings.Join(args, " "))
 	cmd := exec.Command(exe, args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

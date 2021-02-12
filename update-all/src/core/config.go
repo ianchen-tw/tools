@@ -15,3 +15,4 @@ var routineFileName = "config.yaml"
 
 var emoji_skip = emoji.Sprint(":fast-forward_button:")
 var emoji_execute = emoji.Sprint(":rocket:")
+var emoji_run = emoji.Sprint(":backhand_index_pointing_right:")
