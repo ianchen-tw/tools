@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	humanize "github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,11 +25,11 @@ type RecordMap struct {
 //	https://stackoverflow.com/questions/18970265/is-there-an-easy-way-to-stub-out-time-now-globally-during-test
 var GetCurrentTime = time.Now
 
-func (r *RunRecord) shouldUpdate() (ans bool, timeSinceLastRun time.Duration) {
-	timeSinceLastRun = GetCurrentTime().Sub(r.LastRun).Round(100 * time.Millisecond)
+func (r *RunRecord) shouldUpdate() bool {
+	timeSinceLastRun := GetCurrentTime().Sub(r.LastRun).Round(100 * time.Millisecond)
 	minInterval := r.Routine.Interval.ToDuration()
 	log.WithFields(log.Fields{"lastRun": r.LastRun, "timeSinceLastRun": timeSinceLastRun}).Debug("Get Routine info: ", r.Routine.String())
-	return timeSinceLastRun > minInterval, timeSinceLastRun
+	return timeSinceLastRun > minInterval
 }
 
 // CreateRecordMap create a clean RecordMap
@@ -54,7 +55,7 @@ func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skip
 	record := m.fetchRecord(routine)
 	log.Debug("Get record from map: ", record)
 	record.Routine = routine
-	doUpdate, sinceLastRun := record.shouldUpdate()
+	doUpdate := record.shouldUpdate()
 	if doUpdate || forceUpdate {
 		m.update(record)
 		log.Info("Execute: ", routine.String())
@@ -63,7 +64,7 @@ func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skip
 		}
 		return
 	}
-	log.Info("Skip: ", routine.String(), ", execute ", sinceLastRun, " ago")
+	log.Info("Skip: ", routine.String(), ", execute ", humanize.Time(record.LastRun))
 }
 
 // export RecordMap to byte string

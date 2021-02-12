@@ -107,7 +107,7 @@ func TestRunRecordShouldUpdate(t *testing.T) {
 		routine := createRoutine(tt.require, args...)
 		lastrun := GetCurrentTime().Add(tt.given.ToDuration() * -1)
 		record := RunRecord{Routine: *routine, LastRun: lastrun}
-		ans, _ := record.shouldUpdate()
+		ans := record.shouldUpdate()
 		if ans != tt.expect {
 			t.Errorf("Record.shouldUpdate gotResult = %v, expect = %v\ntestcase = %+v", ans, tt.expect, tt)
 		}
