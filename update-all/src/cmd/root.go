@@ -5,8 +5,8 @@ import (
 	"os"
 	"update_all/src/core"
 
+	"github.com/kyokomi/emoji/v2"
 	log "github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +30,7 @@ func newCmdRoot() *cobra.Command {
 		Short: "Update All",
 		Long:  "Automatically run your routines",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			log.Info(emoji.Sprint(":sparkles:Started!!"))
 			if flagDebug {
 				log.SetLevel(log.DebugLevel)
 				log.Debug("Start cobra PreRun hook")
@@ -71,6 +72,7 @@ func startUpdateAll(cmd *cobra.Command, args []string) {
 	for _, routine := range routines {
 		cache.RunRoutineIfOutdated(routine, flagForceUpdate, flagSkipExecute)
 	}
+	log.Info(emoji.Sprint(":tada: Finished!!"))
 
 }
 

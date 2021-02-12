@@ -58,13 +58,13 @@ func (m *RecordMap) RunRoutineIfOutdated(routine Routine, forceUpdate bool, skip
 	doUpdate := record.shouldUpdate()
 	if doUpdate || forceUpdate {
 		m.update(record)
-		log.Info("Execute: ", routine.String())
+		log.Info(emoji_execute, "Execute: ", routine.String())
 		if !skipExecute {
 			routine.Execute()
 		}
 		return
 	}
-	log.Info("Skip: ", routine.String(), ", execute ", humanize.Time(record.LastRun))
+	log.Info(emoji_skip, "Skip: ", routine.String(), ", execute ", humanize.Time(record.LastRun))
 }
 
 // export RecordMap to byte string
