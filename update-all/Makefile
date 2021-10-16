@@ -5,7 +5,7 @@ ALL: build
 
 .PHONY: build
 build:
-	go build -o $(BIN) ./src/main.go
+	go build -o $(BIN) ./main.go
 
 .PHONY: clean
 clean:

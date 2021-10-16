@@ -1,4 +1,4 @@
-module update_all
+module update-all
 
 go 1.15
 

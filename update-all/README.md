@@ -6,7 +6,7 @@ Running daily routines
 
 ![update-all img preview][preview]
 
-[preview]: ./img/preview.png
+[preview]: ./preview.png
 
 ## Installation
 

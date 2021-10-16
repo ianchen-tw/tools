@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"update_all/src/core"
+	"update-all/core"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

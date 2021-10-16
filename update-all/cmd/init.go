@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"update_all/src/core"
+	"update-all/core"
 
 	"github.com/AlecAivazis/survey/v2"
 	log "github.com/sirupsen/logrus"

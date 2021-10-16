@@ -1,7 +1,7 @@
 package main
 
 import (
-	"update_all/src/cmd"
+	"update-all/cmd"
 
 	log "github.com/sirupsen/logrus"
 )

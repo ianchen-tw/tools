@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"update_all/src/core"
+	"update-all/core"
 
 	"github.com/kyokomi/emoji/v2"
 	log "github.com/sirupsen/logrus"
